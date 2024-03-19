@@ -56,7 +56,7 @@ void RC4encryptionRate(){
         byte = rand() % 256; // Randomize the data
     }
     for (uint8_t& byte : seed) {
-        byte = rand() % 256; // Randomize the data
+        byte = rand() % 256; // Randomize the seed
     }
     RC4 rc4;
     rc4.keyGenerate(seed);
@@ -64,30 +64,23 @@ void RC4encryptionRate(){
     int blocksEncrypted = 0;
     auto start = chrono::high_resolution_clock::now();
     unsigned long long start_cycles = __rdtsc();
-    // std::chrono::duration<double> time_diff;
     do {
         rc4.encryptDecrypt(data);
         blocksEncrypted ++;
-        bitsEncrypted += data.size() * 8; // Convert bytes to bits
-        // time_diff = end_time - start_time
     } while (std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start).count() < 250);
     auto end = chrono::high_resolution_clock::now();
     std::chrono::duration<double> time_diff = end- start;
     unsigned long long end_cycles = __rdtsc();
     unsigned long long cycle_diff = end_cycles - start_cycles;
     double speed = static_cast<double>(cycle_diff) / data.size();
-    // Calculate bits per second
     double bits_per_second = 1.0 / (time_diff.count() / data.size());
-
-    // Convert bits per second to megabits per second (Mbps)
     double speed_mbps = bits_per_second / (1024 * 1024);
     cout << "Encrypted " << blocksEncrypted << "blocks of 4096 bits (under 1 keys, " <<  blocksEncrypted << " blocks/key)" << endl;
-    cout << "Total time: " << endl;
+    cout << "Total time: " << time_diff.count() << endl;
     cout << "Encryption speed (cycles/byte):" << speed << endl;
-    cout << "Encryption speed (Mbps): 2570.96" << speed_mbps << endl;
+    cout << "Encryption speed (Mbps): " << speed_mbps << endl;
 }
 
-//2
 void RC4packetEncryptionRate(int dataLength){
     vector<uint8_t> seed;
     seed.resize(18); // 128 bits key
@@ -101,32 +94,24 @@ void RC4packetEncryptionRate(int dataLength){
     }
     RC4 rc4;
     rc4.keyGenerate(seed);
-
-
     int packetsEncrypted = 0;
     auto start = chrono::high_resolution_clock::now();
     unsigned long long start_cycles = __rdtsc();
     do {
         rc4.encryptDecrypt(data);
         packetsEncrypted ++;
-        // time_diff = end_time - start_time
     } while (std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start).count() < 250);
     auto end = chrono::high_resolution_clock::now();
     std::chrono::duration<double> time_diff = end- start;
     unsigned long long end_cycles = __rdtsc();
     unsigned long long cycle_diff = end_cycles - start_cycles;
     double speed = static_cast<double>(cycle_diff) / data.size();
-    // Calculate bits per second
     double bits_per_second = 1.0 / (time_diff.count() / data.size());
-
-    // Convert bits per second to megabits per second (Mbps)
     double speed_mbps = bits_per_second / (1024 * 1024);
     cout << "Encrypted " << packetsEncrypted << "packets of 40 bits (under 1 keys, " <<  packetsEncrypted << " blocks/key)" << endl;
     cout << "Total time: " << time_diff.count();
     cout << "Encryption speed (cycles/byte):" << speed << endl;
-    cout << "Encryption speed (Mbps): 2570.96" << speed_mbps << endl;
-    cout << "Overhead: 14.5%" << endl;
-
+    cout << "Encryption speed (Mbps): " << speed_mbps << endl;
 }
 
 void RC4agility() {
@@ -150,27 +135,13 @@ void RC4keySetUpTime(){
     cout << "Key setup time: " << elapsed_seconds.count() << " seconds" << std::endl;
 }
 
-void display() {
-    cout << "Welcome to the encryption testing site!" << endl;
-    cout << "In this testing site, we are gonna have four different tests for an eStream:" << endl;
-    cout << "1. Encryption rate for long streams: The testing framework measures the encryption rate by encrypting a long stream in chunks of about 4KB. The encryption speed, in cycles/byte, is calculated by measuring the number of bytes encrypted in 250 µsec." << endl;
-    cout << "!) Note that the time to setup the key or the IV is not considered in this test." << endl;
-    cout << "2. Packet encryption rate: While a block cipher is likely to be a better choice when encrypting very short packets, it is still interesting to determine at which length a stream cipher starts to take the lead. " << endl;
-    cout << "The packet encryption rate is measured by applying with the packets of different lengths. Each call includes a separate IV setup and and the packet lengths (40, 576, and 1500 bytes) were chosen to be representative for the traffic seen on the Internet [JTC-003]." << endl;
-    cout << "3. Agility : The testing framework performs the following test: it first initiates a large number of sessions (filling 16MB of RAM ), and then encrypts streams of plaintext in short blocks of around 256 bytes" << endl;
-    cout << "4. Key and IV setup: The last test in the testing framework separately measures the efficiency of the key setup and the IV setup" << endl;
-    cout << endl;
-    cout << endl;
-    cout << endl;
-}
 
 void RC4testingFrameWork(){
     display();
     cout << "Testing eStream: RC4" << endl;
     cout << "====================" << endl;
     cout << "Profile: Team 1" << endl;
-    cout << "Key size:" << endl;
-    cout << "IV size:" << endl ;
+    cout << "Key size: 128 bits" << endl;
     cout << endl;
 
     cout << "Estimated CPU frequency: " << CPUspeed() << " Hz" << endl;
@@ -301,7 +272,7 @@ void MickeyencryptionRate(){
     cout << "Encrypted " << blocksEncrypted << "blocks of 4096 bits (under 1 keys, " <<  blocksEncrypted << " blocks/key)" << endl;
     cout << "Total time: " << endl;
     cout << "Encryption speed (cycles/byte):" << speed << endl;
-    cout << "Encryption speed (Mbps): 2570.96" << speed_mbps << endl;
+    cout << "Encryption speed (Mbps): " << speed_mbps << endl;
 }
 
 //2
@@ -354,9 +325,7 @@ void MickeypacketEncryptionRate(int dataLength){
     cout << "Encrypted " << packetsEncrypted << "packets of 40 bits (under 1 keys, " <<  packetsEncrypted << " blocks/key)" << endl;
     cout << "Total time: " << time_diff.count();
     cout << "Encryption speed (cycles/byte):" << speed << endl;
-    cout << "Encryption speed (Mbps): 2570.96" << speed_mbps << endl;
-    cout << "Overhead: 14.5%" << endl;
-
+    cout << "Encryption speed (Mbps): " << speed_mbps << endl;
 
 }
 
@@ -395,8 +364,8 @@ void MickeytestingFrameWork(){
     cout << "Testing eStream: Mickey2.0>" << endl;
     cout << "====================" << endl;
     cout << "Profile: Team 1" << endl;
-    cout << "Key size: 128" << endl;
-    cout << "IV size: 128" << endl ;
+    cout << "Key size: 80 bits" << endl;
+    cout << "IV size: 80 bits" << endl ;
     cout << endl;
 
     cout << "Estimated CPU frequency: " << CPUspeed() << " Hz" << endl;
@@ -427,7 +396,19 @@ void MickeytestingFrameWork(){
 }
 
 
-
+void display() {
+    cout << "Welcome to the encryption testing site!" << endl;
+    cout << "In this testing site, we are gonna have four different tests for an eStream:" << endl;
+    cout << "1. Encryption rate for long streams: The testing framework measures the encryption rate by encrypting a long stream in chunks of about 4KB. The encryption speed, in cycles/byte, is calculated by measuring the number of bytes encrypted in 250 µsec." << endl;
+    cout << "!) Note that the time to setup the key or the IV is not considered in this test." << endl;
+    cout << "2. Packet encryption rate: While a block cipher is likely to be a better choice when encrypting very short packets, it is still interesting to determine at which length a stream cipher starts to take the lead. " << endl;
+    cout << "The packet encryption rate is measured by applying with the packets of different lengths. Each call includes a separate IV setup and and the packet lengths (40, 576, and 1500 bytes) were chosen to be representative for the traffic seen on the Internet [JTC-003]." << endl;
+    cout << "3. Agility : The testing framework performs the following test: it first initiates a large number of sessions (filling 16MB of RAM ), and then encrypts streams of plaintext in short blocks of around 256 bytes" << endl;
+    cout << "4. Key and IV setup: The last test in the testing framework separately measures the efficiency of the key setup and the IV setup" << endl;
+    cout << endl;
+    cout << endl;
+    cout << endl;
+}
 
 int main() {
     display();
