@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <chrono> // For timing
 #include <thread>
+#include <fstream>
 #include "RC4.h"
 
 #ifdef _MSC_VER
@@ -49,14 +50,14 @@ double CPUspeed(){
 
 void RC4encryptionRate(){
     vector<uint8_t> seed;
-    seed.resize(18); // 128 bits key
+    seed.resize(16); // 128 bits key
     vector<uint8_t> data;
     data.resize(4096); // Resize the data to 4kB.
     for (uint8_t& byte : data) {
         byte = rand() % 256; // Randomize the data
     }
     for (uint8_t& byte : seed) {
-        byte = rand() % 256; // Randomize the seed
+        byte = rand() % 256; // Randomize the data
     }
     RC4 rc4;
     rc4.keyGenerate(seed);
@@ -64,16 +65,22 @@ void RC4encryptionRate(){
     int blocksEncrypted = 0;
     auto start = chrono::high_resolution_clock::now();
     unsigned long long start_cycles = __rdtsc();
+    // std::chrono::duration<double> time_diff;
     do {
         rc4.encryptDecrypt(data);
         blocksEncrypted ++;
+        bitsEncrypted += data.size() * 8; // Convert bytes to bits
+        // time_diff = end_time - start_time
     } while (std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start).count() < 250);
     auto end = chrono::high_resolution_clock::now();
     std::chrono::duration<double> time_diff = end- start;
     unsigned long long end_cycles = __rdtsc();
     unsigned long long cycle_diff = end_cycles - start_cycles;
     double speed = static_cast<double>(cycle_diff) / data.size();
+    // Calculate bits per second
     double bits_per_second = 1.0 / (time_diff.count() / data.size());
+
+    // Convert bits per second to megabits per second (Mbps)
     double speed_mbps = bits_per_second / (1024 * 1024);
     cout << "Encrypted " << blocksEncrypted << "blocks of 4096 bits (under 1 keys, " <<  blocksEncrypted << " blocks/key)" << endl;
     cout << "Total time: " << time_diff.count() << endl;
@@ -81,6 +88,7 @@ void RC4encryptionRate(){
     cout << "Encryption speed (Mbps): " << speed_mbps << endl;
 }
 
+//2
 void RC4packetEncryptionRate(int dataLength){
     vector<uint8_t> seed;
     seed.resize(18); // 128 bits key
@@ -94,22 +102,28 @@ void RC4packetEncryptionRate(int dataLength){
     }
     RC4 rc4;
     rc4.keyGenerate(seed);
+
+
     int packetsEncrypted = 0;
     auto start = chrono::high_resolution_clock::now();
     unsigned long long start_cycles = __rdtsc();
     do {
         rc4.encryptDecrypt(data);
         packetsEncrypted ++;
+        // time_diff = end_time - start_time
     } while (std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start).count() < 250);
     auto end = chrono::high_resolution_clock::now();
     std::chrono::duration<double> time_diff = end- start;
     unsigned long long end_cycles = __rdtsc();
     unsigned long long cycle_diff = end_cycles - start_cycles;
     double speed = static_cast<double>(cycle_diff) / data.size();
+    // Calculate bits per second
     double bits_per_second = 1.0 / (time_diff.count() / data.size());
+
+    // Convert bits per second to megabits per second (Mbps)
     double speed_mbps = bits_per_second / (1024 * 1024);
     cout << "Encrypted " << packetsEncrypted << "packets of 40 bits (under 1 keys, " <<  packetsEncrypted << " blocks/key)" << endl;
-    cout << "Total time: " << time_diff.count();
+    cout << "Total time: " << time_diff.count() << endl;
     cout << "Encryption speed (cycles/byte):" << speed << endl;
     cout << "Encryption speed (Mbps): " << speed_mbps << endl;
 }
@@ -135,13 +149,27 @@ void RC4keySetUpTime(){
     cout << "Key setup time: " << elapsed_seconds.count() << " seconds" << std::endl;
 }
 
+void display() {
+    cout << "Welcome to the encryption testing site!" << endl;
+    cout << "In this testing site, we are gonna have four different tests for an eStream:" << endl;
+    cout << "1. Encryption rate for long streams: The testing framework measures the encryption rate by encrypting a long stream in chunks of about 4KB. The encryption speed, in cycles/byte, is calculated by measuring the number of bytes encrypted in 250 µsec." << endl;
+    cout << "!) Note that the time to setup the key or the IV is not considered in this test." << endl;
+    cout << "2. Packet encryption rate: While a block cipher is likely to be a better choice when encrypting very short packets, it is still interesting to determine at which length a stream cipher starts to take the lead. " << endl;
+    cout << "The packet encryption rate is measured by applying with the packets of different lengths. Each call includes a separate IV setup and and the packet lengths (40, 576, and 1500 bytes) were chosen to be representative for the traffic seen on the Internet [JTC-003]." << endl;
+    cout << "3. Agility : The testing framework performs the following test: it first initiates a large number of sessions (filling 16MB of RAM ), and then encrypts streams of plaintext in short blocks of around 256 bytes" << endl;
+    cout << "4. Key and IV setup: The last test in the testing framework separately measures the efficiency of the key setup and the IV setup" << endl;
+    cout << endl;
+    cout << endl;
+    cout << endl;
+}
 
 void RC4testingFrameWork(){
-    display();
+    //display();
     cout << "Testing eStream: RC4" << endl;
     cout << "====================" << endl;
     cout << "Profile: Team 1" << endl;
-    cout << "Key size: 128 bits" << endl;
+    cout << "Key size:" << endl;
+    cout << "IV size:" << endl ;
     cout << endl;
 
     cout << "Estimated CPU frequency: " << CPUspeed() << " Hz" << endl;
@@ -171,12 +199,14 @@ void RC4testingFrameWork(){
     RC4keySetUpTime();
 }
 
-//Mickey
-bool rtaps[100] = {1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1};
-bool comp0[100] = {0 /*comp0[0]=X*/, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0 /*comp0[100]=X*/};
-bool comp1[100] = {0 /*comp1[0]=X*/, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 /*comp1[100]=X*/};
-bool fb0[100] = {0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0};
-bool fb1[100] = {0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0};
+//Mickey           0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 
+bool rtaps[100] = {1, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0};
+
+//Mickey           0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 
+bool comp0[100] = {0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0 /*comp0[0,99]=X*/};
+bool comp1[100] = {0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0 /*comp1[0,99]=X*/};
+bool fb0[100]   = {1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0};
+bool fb1[100]   = {1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 
 void clock_r(bool (&x)[100], bool ctrl_bit, bool input_bit){
     bool fb_bit = x[99]^input_bit;
@@ -269,8 +299,8 @@ void MickeyencryptionRate(){
 
     // Convert bits per second to megabits per second (Mbps)
     double speed_mbps = bits_per_second / (1024 * 1024);
-    cout << "Encrypted " << blocksEncrypted << "blocks of 4096 bits (under 1 keys, " <<  blocksEncrypted << " blocks/key)" << endl;
-    cout << "Total time: " << endl;
+    cout << "Encrypted " << blocksEncrypted << " blocks of 4096 bits (under 1 keys, " <<  blocksEncrypted << " blocks/key)" << endl;
+    cout << "Total time: " << time_diff.count() << endl;
     cout << "Encryption speed (cycles/byte):" << speed << endl;
     cout << "Encryption speed (Mbps): " << speed_mbps << endl;
 }
@@ -310,7 +340,7 @@ void MickeypacketEncryptionRate(int dataLength){
         }
         packetsEncrypted ++;
         // bitsEncrypted += data.size() * 8; // Convert bytes to bits
-        // time_diff = end_time - start_time
+        // time_diff = end_time - start_time (does not include time taken to initialize regisers)
     } while (std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start).count() < 250);
     auto end = chrono::high_resolution_clock::now();
     std::chrono::duration<double> time_diff = end- start;
@@ -322,11 +352,10 @@ void MickeypacketEncryptionRate(int dataLength){
 
     // Convert bits per second to megabits per second (Mbps)
     double speed_mbps = bits_per_second / (1024 * 1024);
-    cout << "Encrypted " << packetsEncrypted << "packets of 40 bits (under 1 keys, " <<  packetsEncrypted << " blocks/key)" << endl;
-    cout << "Total time: " << time_diff.count();
+    cout << "Encrypted " << packetsEncrypted << " packets of 40 bits (under 1 keys, " <<  packetsEncrypted << " blocks/key)" << endl;
+    cout << "Total time: " << time_diff.count() << endl;
     cout << "Encryption speed (cycles/byte):" << speed << endl;
     cout << "Encryption speed (Mbps): " << speed_mbps << endl;
-
 }
 
 void Mickeyagility() {
@@ -354,18 +383,18 @@ void MickeykeySetUpTime(){
     }
     auto end = chrono::high_resolution_clock::now();
     chrono::duration<double> elapsed_seconds = end - start;
-    cout << "Did 7000 key setups under 1 key" << endl;
-    cout << "Keystream setup time: " << elapsed_seconds.count() << " seconds" << std::endl;
+    cout << "Did 7000 key iniializations under 1 key" << endl;
+    cout << "Keystream initialization time: " << elapsed_seconds.count() << " seconds" << std::endl;
 }
 
 
 void MickeytestingFrameWork(){
-    display();
+    //display();
     cout << "Testing eStream: Mickey2.0>" << endl;
     cout << "====================" << endl;
     cout << "Profile: Team 1" << endl;
-    cout << "Key size: 80 bits" << endl;
-    cout << "IV size: 80 bits" << endl ;
+    cout << "Key size: 80" << endl;
+    cout << "IV size: 80" << endl ;
     cout << endl;
 
     cout << "Estimated CPU frequency: " << CPUspeed() << " Hz" << endl;
@@ -395,25 +424,120 @@ void MickeytestingFrameWork(){
     MickeykeySetUpTime();
 }
 
-
-void display() {
-    cout << "Welcome to the encryption testing site!" << endl;
-    cout << "In this testing site, we are gonna have four different tests for an eStream:" << endl;
-    cout << "1. Encryption rate for long streams: The testing framework measures the encryption rate by encrypting a long stream in chunks of about 4KB. The encryption speed, in cycles/byte, is calculated by measuring the number of bytes encrypted in 250 µsec." << endl;
-    cout << "!) Note that the time to setup the key or the IV is not considered in this test." << endl;
-    cout << "2. Packet encryption rate: While a block cipher is likely to be a better choice when encrypting very short packets, it is still interesting to determine at which length a stream cipher starts to take the lead. " << endl;
-    cout << "The packet encryption rate is measured by applying with the packets of different lengths. Each call includes a separate IV setup and and the packet lengths (40, 576, and 1500 bytes) were chosen to be representative for the traffic seen on the Internet [JTC-003]." << endl;
-    cout << "3. Agility : The testing framework performs the following test: it first initiates a large number of sessions (filling 16MB of RAM ), and then encrypts streams of plaintext in short blocks of around 256 bytes" << endl;
-    cout << "4. Key and IV setup: The last test in the testing framework separately measures the efficiency of the key setup and the IV setup" << endl;
-    cout << endl;
-    cout << endl;
-    cout << endl;
+void read_input(bool (&x)[80], bool (&y)[80], int &n){ 
+    string s; int count;
+    ifstream f;
+    f.open("mickey_key");
+    getline(f, s);
+    f.close();
+    count = 0;
+    for (int i=0; i<s.length(); i++) 
+    switch (s[i]) {
+        case '0': {x[count]=0; count++; break;} 
+        case '1': {x[count]=1; count++; break;} 
+        default: {break;}
+    }
+    if (count!=80) cout << "Key doesn't have sufficient length";
+    f.open("mickey_iv");
+    getline(f, s);
+    f.close();
+    count = 0;
+    for (int i=0; i<s.length(); i++) 
+    switch (s[i]) {
+        case '0': {y[count]=0; count++; break;} 
+        case '1': {y[count]=1; count++; break;} 
+        default: {break;}
+    }
+    if (count>80) cout << "Init vector is too long";
+    n = count;
 }
 
-int main() {
+void mickey(string input_str){
+    ofstream f;
+    f.open("readme.md", ios::out | ios::trunc);
+    f.close();
+    bool iv[80];
+    bool k[80];
+    bool r[100];
+    bool s[100];
+    int iv_length;
+    read_input(k,iv,iv_length);
+    int temp, count;
+    bool bit_stream[8*input_str.length()];
+    for (int i=0; i<input_str.length(); i++) {
+        temp = (int)input_str[i];
+        count = 8;
+        while (count) {
+            count--;
+            bit_stream[8*i+count]=temp%2;
+            temp/=2;
+        }
+    }
+    bool cyphertext[8*(input_str.length()+1)];
+    bool keystream[8*(input_str.length()+1)];
+    init(r,s,k,iv,iv_length);
+    for (int i = 0; i<8*(input_str.length()+1); i++) {
+        keystream[i]=r[0]^s[0];
+        cyphertext[i]=bit_stream[i]^keystream[i];
+        clock_kg(r,s,0,0);
+    }
+    f.open("readme.md");
+    for (int i = 0; i<8*(input_str.length()+1); i++) {if (!(i%4)) f << " "; f << cyphertext[i];}
+    f.close();
+    cout << "Cyphertext transfered to readme.md" << endl;
+}
+
+void RC4_interface(string input_str){
+    ofstream f;
+    f.open("readme.md", ios::out | ios::trunc);
+    f.close();
+    int size, count; 
+    vector<uint8_t> seed;
+    vector<uint8_t> data;
+    cout << "Enter seed byte size: ";
+    cin >> size;
+    seed.resize(size);
+    int temp;
+    for (uint8_t& byte : seed) {
+        cout << "Enter next seed byte (0 to 255): ";
+        cin >> temp;
+        byte = temp;
+    }
+    data.resize(input_str.length()); count = 0;
+    for (uint8_t& byte : data) {byte = (int)input_str[count]; count++;}
+    RC4 rc4;
+    rc4.keyGenerate(seed);
+    rc4.encryptDecrypt(data);
+    f.open("readme.md");
+    for (uint8_t& byte : data) {
+        bool b[8];
+        temp = (int)byte;
+        count = 8;
+        while (count) {
+            count--;
+            b[count]=temp%2;
+            temp/=2;
+        }
+        f << b[0] << b[1] << b[2] << b[3] <<  " " << b[4] << b[5] << b[6] << b[7] <<  " "; 
+    }
+    f.close();
+    cout << "Cyphertext transfered to readme.md" << endl;
+}
+
+int main() {    
     display();
     RC4testingFrameWork();
     cout << endl << endl;
     MickeytestingFrameWork();
-    cout << "End of performance measurements";
+    cout << "End of performance measurements" << endl << endl;
+
+    string p,k;
+    int method;
+    cout << "Enter plaintext: " << endl;
+    getline(cin, p);
+    cout << "Enter method of encode (0 for RC4, 1 for Mickey): ";
+    cin >> method;
+    if (method==0) RC4_interface(p);
+    else if (method==1) mickey(p);
+    return 0;
 }
